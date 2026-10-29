@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WattWise — ML Electricity Consumption Anomaly Detection</title>
+    <meta name="description" content="WattWise is an unsupervised machine learning platform utilizing Isolation Forest to detect anomalous electricity consumption and potential energy waste.">
+    
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand-container">
+                <div class="brand-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">WattWise</span>
+                    <span class="brand-subtitle">Energy ML Sentinel</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#overview-section" class="nav-item active" id="nav-overview">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#analytics-section" class="nav-item" id="nav-analytics">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
+                    <span>Consumption Charts</span>
+                </a>
+                <a href="#predict-section" class="nav-item" id="nav-predict">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    <span>Live ML Detector</span>
+                </a>
+                <a href="#readings-section" class="nav-item" id="nav-readings">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span>Telemetry Log</span>
+                </a>
+                <a href="/docs" target="_blank" class="nav-item" id="nav-docs">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <span>FastAPI Swagger</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-model-badge">
+                <div class="badge-header">
+                    <span class="status-pulse-dot"></span>
+                    <span class="badge-title">ISOLATION FOREST</span>
+                </div>
+                <p class="badge-desc">Unsupervised ensemble isolating anomalous multi-dimensional load patterns.</p>
+                <div class="badge-stats">
+                    <div class="b-stat"><span>Trees</span><strong>150</strong></div>
+                    <div class="b-stat"><span>Contam.</span><strong>8%</strong></div>
+                    <div class="b-stat"><span>F1-Score</span><strong id="badge-f1">0.99</strong></div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <span class="sim-notice-tag">Simulated Dataset (2.5K)</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-wrapper">
+            <!-- Top Header Bar -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1>Electricity Anomaly Intelligence</h1>
+                    <p class="header-desc">Continuous unsupervised detection of irregular appliance loads & energy waste</p>
+                </div>
+                <div class="header-right">
+                    <div class="system-status-pill">
+                        <span class="status-dot-active"></span>
+                        <span id="backend-status-text">FastAPI Engine Online</span>
+                    </div>
+                    <button class="btn-refresh" id="btn-refresh-all" title="Reload live readings">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+                        <span>Sync</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-container">
+                <!-- Global Notification / Banner -->
+                <div class="info-banner" id="global-banner">
+                    <div class="banner-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    </div>
+                    <div class="banner-content">
+                        <strong>Simulated Benchmark Telemetry:</strong> All 2,500 hourly records represent realistic household loads with deliberately injected operational anomalies (HVAC runaway, refrigerator seal leaks, stuck water heaters) for model evaluation.
+                    </div>
+                </div>
+
+                <!-- 1. KPI Overview Section -->
+                <section class="section" id="overview-section">
+                    <div class="kpi-grid">
+                        <div class="kpi-card" id="card-total-readings">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Total Readings</span>
+                                <div class="kpi-icon icon-blue">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                                </div>
+                            </div>
+                            <div class="kpi-value" id="val-total-readings">--</div>
+                            <div class="kpi-footer">
+                                <span class="kpi-subtext">Hourly telemetry records</span>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card" id="card-anomalies-detected">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Anomalies Detected</span>
+                                <div class="kpi-icon icon-rose">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                </div>
+                            </div>
+                            <div class="kpi-value highlight-rose" id="val-anomalies">--</div>
+                            <div class="kpi-footer">
+                                <span class="kpi-tag tag-rose" id="val-anomaly-count-pill">-- flagged</span>
+                                <span class="kpi-subtext">requires inspection</span>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card" id="card-anomaly-rate">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Anomaly Rate</span>
+                                <div class="kpi-icon icon-amber">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg>
+                                </div>
+                            </div>
+                            <div class="kpi-value highlight-amber" id="val-anomaly-rate">--%</div>
+                            <div class="kpi-footer">
+                                <span class="kpi-subtext">Target contamination: ~8.0%</span>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card" id="card-avg-consumption">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Avg Power Draw</span>
+                                <div class="kpi-icon icon-emerald">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                                </div>
+                            </div>
+                            <div class="kpi-value highlight-emerald" id="val-avg-consumption">-- W</div>
+                            <div class="kpi-footer">
+                                <span class="kpi-subtext" id="val-baseline-comparison">vs -- W expected baseline</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. Interactive Charts Section -->
+                <section class="section" id="analytics-section">
+                    <div class="charts-layout">
+                        <!-- Main Time Series Consumption vs Anomaly Chart -->
+                        <div class="chart-card main-chart-card">
+                            <div class="chart-header">
+                                <div>
+                                    <h2 class="chart-title">Real-Time Power Telemetry & Anomaly Outliers</h2>
+                                    <p class="chart-subtitle">Observed Wattage vs Expected Baseline (Red markers identify Isolation Forest anomalies)</p>
+                                </div>
+                                <div class="chart-controls">
+                                    <button class="filter-pill active" data-filter="100">Last 100</button>
+                                    <button class="filter-pill" data-filter="250">Last 250</button>
+                                    <button class="filter-pill" data-filter="500">Last 500</button>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="timeseriesChart"></canvas>
+                            </div>
+                            <div class="chart-legend-custom">
+                                <span class="legend-item"><span class="dot dot-emerald"></span> Observed Power (W)</span>
+                                <span class="legend-item"><span class="dot dot-dashed"></span> Baseline Expectation (W)</span>
+                                <span class="legend-item"><span class="dot dot-rose"></span> Detected Anomaly Spike</span>
+                            </div>
+                        </div>
+
+                        <!-- Secondary Breakdown Chart -->
+                        <div class="chart-card side-chart-card">
+                            <div class="chart-header">
+                                <div>
+                                    <h2 class="chart-title">Anomalies by Appliance</h2>
+                                    <p class="chart-subtitle">Distribution across critical household load categories</p>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper side-chart-wrapper">
+                                <canvas id="applianceChart"></canvas>
+                            </div>
+                            <div class="appliance-stat-list" id="appliance-breakdown-list">
+                                <!-- Populated dynamically by script.js -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Live ML Prediction Engine Section -->
+                <section class="section" id="predict-section">
+                    <div class="predict-container">
+                        <div class="predict-card">
+                            <div class="card-head">
+                                <div class="head-badge">Live ML Inference</div>
+                                <h2>Manual Telemetry Prediction & Diagnosis</h2>
+                                <p>Simulate a sensor reading to evaluate it in real time against the trained Isolation Forest model.</p>
+                            </div>
+
+                            <!-- Preset Scenarios for Rapid Professor Demonstration -->
+                            <div class="preset-scenarios">
+                                <span class="preset-label">Professor Demo Presets:</span>
+                                <div class="preset-buttons">
+                                    <button type="button" class="btn-preset" id="preset-normal-hvac">
+                                        <span class="p-dot dot-emerald"></span>
+                                        Normal Daytime HVAC (1,850W)
+                                    </button>
+                                    <button type="button" class="btn-preset" id="preset-hvac-anomaly">
+                                        <span class="p-dot dot-rose"></span>
+                                        Off-Peak HVAC Runaway (3,900W @ 3 AM)
+                                    </button>
+                                    <button type="button" class="btn-preset" id="preset-fridge-leak">
+                                        <span class="p-dot dot-rose"></span>
+                                        Refrigerator Seal Leak (680W @ 2 AM)
+                                    </button>
+                                    <button type="button" class="btn-preset" id="preset-wh-stuck">
+                                        <span class="p-dot dot-rose"></span>
+                                        Stuck Water Heater (4,400W @ 2 AM)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form id="prediction-form" class="prediction-form">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="input-appliance">Appliance Category</label>
+                                        <select id="input-appliance" name="appliance" required>
+                                            <option value="HVAC">HVAC / Air Conditioning</option>
+                                            <option value="Refrigeration">Refrigeration</option>
+                                            <option value="Water Heater">Water Heater</option>
+                                            <option value="Lighting">Lighting</option>
+                                            <option value="EV Charger">EV Charger</option>
+                                            <option value="Laundry / Kitchen">Laundry / Kitchen</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="input-hour">Hour of Day (0 - 23)</label>
+                                        <div class="hour-input-row">
+                                            <input type="range" id="slider-hour" min="0" max="23" value="14" class="range-slider">
+                                            <input type="number" id="input-hour" name="hour" min="0" max="23" value="14" required class="number-input">
+                                            <span class="hour-preview" id="hour-time-preview">14:00 (2 PM)</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="input-day">Day of Week</label>
+                                        <select id="input-day" name="day_of_week" required>
+                                            <option value="0">Monday</option>
+                                            <option value="1">Tuesday</option>
+                                            <option value="2" selected>Wednesday</option>
+                                            <option value="3">Thursday</option>
+                                            <option value="4">Friday</option>
+                                            <option value="5">Saturday (Weekend)</option>
+                                            <option value="6">Sunday (Weekend)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="input-power">Observed Power Consumption (Watts)</label>
+                                        <div class="input-with-unit">
+                                            <input type="number" id="input-power" name="power_consumption" step="0.1" min="0" value="1850.0" required placeholder="e.g. 1850">
+                                            <span class="unit-tag">Watts</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="input-baseline">Expected Baseline Nominal Consumption</label>
+                                        <div class="input-with-unit">
+                                            <input type="number" id="input-baseline" name="baseline_consumption" step="0.1" min="1" value="1800.0" required placeholder="e.g. 1800">
+                                            <span class="unit-tag">Watts</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-predict-submit" id="btn-submit-predict">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                                        <span id="btn-text">Execute ML Anomaly Inference</span>
+                                        <span class="spinner-inline hidden" id="predict-spinner"></span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Prediction Result Panel -->
+                        <div class="predict-result-panel" id="result-panel">
+                            <div class="result-placeholder" id="result-placeholder">
+                                <div class="pulse-icon-box">
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                </div>
+                                <h3>Ready for Telemetry Inference</h3>
+                                <p>Submit reading parameters or click one of the professor demo presets above to evaluate anomaly classification.</p>
+                            </div>
+
+                            <div class="result-card hidden" id="result-card">
+                                <div class="result-badge-row">
+                                    <div class="status-pill" id="res-status-pill">
+                                        <span class="pill-dot" id="res-pill-dot"></span>
+                                        <span id="res-status-title">STATUS</span>
+                                    </div>
+                                    <span class="risk-tag" id="res-risk-tag">LOW RISK</span>
+                                </div>
+
+                                <div class="score-meter-box">
+                                    <div class="score-header">
+                                        <span>Calibrated Anomaly Score</span>
+                                        <strong id="res-score-number">0.0%</strong>
+                                    </div>
+                                    <div class="meter-track">
+                                        <div class="meter-bar" id="res-meter-bar" style="width: 0%;"></div>
+                                    </div>
+                                    <div class="meter-scale">
+                                        <span>0% (Nominal)</span>
+                                        <span>50% (Threshold)</span>
+                                        <span>100% (Critical Outlier)</span>
+                                    </div>
+                                </div>
+
+                                <div class="feature-comparison-grid">
+                                    <div class="fc-item">
+                                        <span class="fc-label">Power Draw</span>
+                                        <strong id="res-power-val">-- W</strong>
+                                    </div>
+                                    <div class="fc-item">
+                                        <span class="fc-label">Baseline</span>
+                                        <strong id="res-baseline-val">-- W</strong>
+                                    </div>
+                                    <div class="fc-item">
+                                        <span class="fc-label">Deviation Ratio</span>
+                                        <strong id="res-ratio-val">--x</strong>
+                                    </div>
+                                    <div class="fc-item">
+                                        <span class="fc-label">Delta</span>
+                                        <strong id="res-diff-val">-- W</strong>
+                                    </div>
+                                </div>
+
+                                <div class="diagnostic-box">
+                                    <div class="diag-title">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                        <span>Diagnostic Rationale</span>
+                                    </div>
+                                    <p class="diag-text" id="res-explanation-text">--</p>
+                                </div>
+
+                                <div class="disclaimer-note">
+                                    <strong>Scientific Disclaimer:</strong> <span id="res-disclaimer">WattWise flags statistical irregularities in multi-dimensional feature space; physical inspection is recommended to confirm hardware faults.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. Readings Table Section -->
+                <section class="section" id="readings-section">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <div>
+                                <h2 class="table-title">Recent Telemetry Readings</h2>
+                                <p class="table-subtitle">Live stream of appliance consumption with unsupervised classification status</p>
+                            </div>
+                            <div class="table-filters">
+                                <div class="search-box">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    <input type="text" id="table-search" placeholder="Filter by appliance...">
+                                </div>
+                                <div class="table-filter-pills">
+                                    <button class="t-pill active" id="btn-filter-all">All</button>
+                                    <button class="t-pill" id="btn-filter-anomalies">Anomalies Only</button>
+                                    <button class="t-pill" id="btn-filter-normal">Normal Only</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table" id="readings-table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Hour / Day</th>
+                                        <th>Appliance</th>
+                                        <th>Power (W)</th>
+                                        <th>Baseline (W)</th>
+                                        <th>Ratio</th>
+                                        <th>Classification</th>
+                                        <th>Operational Note</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="readings-table-body">
+                                    <tr>
+                                        <td colspan="8" class="loading-cell">Loading telemetry readings...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="table-pagination">
+                            <div class="pagination-info" id="pagination-info">Showing records 1 - 25</div>
+                            <div class="pagination-buttons">
+                                <button class="btn-page" id="btn-page-prev" disabled>Previous</button>
+                                <button class="btn-page" id="btn-page-next">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Footer -->
+            <footer class="app-footer">
+                <div class="footer-left">
+                    <strong>WattWise ML System</strong> &copy; 2026. Academic demonstration for electricity consumption anomaly detection.
+                </div>
+                <div class="footer-right">
+                    <span>Algorithm: Scikit-Learn IsolationForest</span>
+                    <span>Backend: FastAPI + Uvicorn</span>
+                    <span>Frontend: Vanilla HTML5 / CSS3 / ES6</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Application Script -->
+    <script src="/static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "model_name": "Isolation Forest Anomaly Detector",
+  "algorithm": "IsolationForest(n_estimators=150, contamination=0.08)",
+  "training_samples": 2500,
+  "features": [
+    "hour",
+    "day_of_week",
+    "power_consumption",
+    "baseline_consumption",
+    "consumption_ratio",
+    "consumption_diff",
+    "appliance"
+  ],
+  "appliances": [
+    "EV Charger",
+    "HVAC",
+    "Laundry / Kitchen",
+    "Lighting",
+    "Refrigeration",
+    "Water Heater"
+  ],
+  "contamination": 0.08,
+  "actual_anomaly_rate": 0.08,
+  "metrics": {
+    "precision": 0.99,
+    "recall": 0.99,
+    "f1_score": 0.99,
+    "roc_auc": 0.9999,
+    "true_positives": 198,
+    "false_positives": 2,
+    "true_negatives": 2298,
+    "false_negatives": 2
+  },
+  "score_calibration": {
+    "score_min": -0.1239,
+    "score_max": 0.1824,
+    "offset": -0.543
+  },
+  "trained_timestamp": "2026-10-28T10:45:19.694485",
+  "disclaimer": "Unsupervised model detects statistical irregularities in power consumption. Not an engineering fault certificate."
+}
